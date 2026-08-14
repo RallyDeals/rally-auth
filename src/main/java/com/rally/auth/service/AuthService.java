@@ -79,15 +79,10 @@ public class AuthService {
         return response;
     }
 
-    /**
-     * Issues a fresh token pair (hashed refresh token + signed access JWT) for
-     * an authenticated user. Reused by login and by verify-email auto sign-in
-     * (research R-005).
-     */
     @Transactional
     public LoginResponse issueTokenPair(User user) {
         String refreshToken = issueRefreshToken(user.getId());
-        String accessToken = jwtTokenService.sign(user.getId(), user.getRole());
+        String accessToken = jwtTokenService.sign(user, user.getRole());
         return new LoginResponse(
                 accessToken,
                 refreshToken,
