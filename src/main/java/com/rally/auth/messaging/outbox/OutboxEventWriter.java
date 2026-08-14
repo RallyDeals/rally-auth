@@ -10,11 +10,7 @@ import java.util.UUID;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-/**
- * Persists outbox messages inside the same transaction as the business change.
- * Envelope fields (X-Id, X-Type, X-Correlation-Id, X-Causation-Id, X-Trace-Id)
- * live in the headers JSONB; the payload carries business fields only.
- */
+
 @Component
 public class OutboxEventWriter {
 
@@ -27,19 +23,22 @@ public class OutboxEventWriter {
         this.outboxJpaRepository = outboxJpaRepository;
     }
 
-    /**
-     * Writes a User event (topic {@code user.events}, aggregate type User).
-     * Correlation id is generated per request; causation id and trace id are
-     * carried from the surrounding context when present.
-     */
+
     public void writeUserEvent(UUID userId, String eventType, JsonNode payload) {
+        writeUserEvent(userId, eventType, payload, null);
+    }
+
+    public void writeUserEvent(UUID userId, String eventType, JsonNode payload, UUID causationId) {
         UUID messageId = UUID.randomUUID();
-        UUID correlationId = UUID.randomUUID();
+        UUID correlationId = causationId != null ? causationId : UUID.randomUUID();
 
         ObjectNode headers = OBJECT_MAPPER.createObjectNode();
         headers.put(MessageHeaders.ID, messageId.toString());
         headers.put(MessageHeaders.TYPE, eventType);
         headers.put(MessageHeaders.CORRELATION_ID, correlationId.toString());
+        if (causationId != null) {
+            headers.put(MessageHeaders.CAUSATION_ID, causationId.toString());
+        }
         String traceId = MDC.get(TRACE_MDC_KEY);
         if (traceId != null) {
             headers.put(MessageHeaders.TRACE_ID, traceId);
@@ -53,6 +52,7 @@ public class OutboxEventWriter {
                 .messageKey(userId.toString())
                 .messageType(eventType)
                 .correlationId(correlationId)
+                .causationId(causationId != null ? causationId.toString() : null)
                 .traceId(traceId)
                 .payload(payload)
                 .headers(headers)
