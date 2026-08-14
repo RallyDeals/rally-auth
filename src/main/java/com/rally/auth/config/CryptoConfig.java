@@ -19,11 +19,7 @@ public class CryptoConfig {
 
     @Bean
     PrivateKey jwtSigningKey(AppProperties properties) {
-        String pem = properties.getSecurity().getJwt().getPrivateKey();
-        String der = pem
-                .replace("-----BEGIN PRIVATE KEY-----", "")
-                .replace("-----END PRIVATE KEY-----", "")
-                .replaceAll("\\s", "");
+        String der = properties.getSecurity().getJwt().getPrivateKey();
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(der)));
