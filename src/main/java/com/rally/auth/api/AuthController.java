@@ -1,6 +1,7 @@
 package com.rally.auth.api;
 
 import com.rally.auth.dto.ChangePasswordRequest;
+import com.rally.auth.dto.ForgotPasswordRequest;
 import com.rally.auth.dto.LoginRequest;
 import com.rally.auth.dto.LoginResponse;
 import com.rally.auth.dto.LogoutRequest;
@@ -8,9 +9,11 @@ import com.rally.auth.dto.RefreshRequest;
 import com.rally.auth.dto.RegisterRequest;
 import com.rally.auth.dto.RegisterResponse;
 import com.rally.auth.dto.ResendVerificationRequest;
+import com.rally.auth.dto.ResetPasswordRequest;
 import com.rally.auth.dto.TokenPairResponse;
 import com.rally.auth.dto.VerifyEmailRequest;
 import com.rally.auth.service.AuthService;
+import com.rally.auth.service.PasswordResetService;
 import com.rally.auth.service.RegistrationService;
 import com.rally.auth.service.SessionService;
 import jakarta.validation.Valid;
@@ -30,12 +33,14 @@ public class AuthController {
     private final AuthService authService;
     private final SessionService sessionService;
     private final RegistrationService registrationService;
+    private final PasswordResetService passwordResetService;
 
     public AuthController(AuthService authService, SessionService sessionService,
-            RegistrationService registrationService) {
+            RegistrationService registrationService, PasswordResetService passwordResetService) {
         this.authService = authService;
         this.sessionService = sessionService;
         this.registrationService = registrationService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/login")
@@ -59,6 +64,18 @@ public class AuthController {
             @Valid @RequestBody ResendVerificationRequest request) {
         registrationService.resendVerificationOtp(request);
         return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestPasswordReset(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.email(), request.otp(), request.newPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/refresh")
