@@ -34,6 +34,9 @@ public class EmailOtp {
     @Column(name = "otp", nullable = false, length = 6)
     private String otp;
 
+    @Column(name = "failed_attempts", nullable = false)
+    private int failedAttempts;
+
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
@@ -71,5 +74,13 @@ public class EmailOtp {
         if (usedAt == null) {
             usedAt = Instant.now();
         }
+    }
+
+    public void incrementFailedAttempts() {
+        this.failedAttempts++;
+    }
+
+    public boolean isExhausted(int maxAttempts) {
+        return failedAttempts >= maxAttempts;
     }
 }
