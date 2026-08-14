@@ -1,6 +1,7 @@
 package com.rally.auth.security;
 
 import com.rally.auth.domain.user.Role;
+import com.rally.auth.domain.user.User;
 import io.jsonwebtoken.Jwts;
 import java.security.PrivateKey;
 import java.time.Instant;
@@ -22,10 +23,14 @@ public class JwtTokenService {
         this.accessTokenSeconds = accessTokenSeconds;
     }
 
-    public String sign(UUID userId, Role role) {
+    public String sign(User user, Role role) {
         Instant now = Instant.now();
         return Jwts.builder()
-                .subject(userId.toString())
+                .subject(user.getId().toString())
+                .claim("firstName", user.getFirstName())
+                .claim("lastName", user.getLastName())
+                .claim("email", user.getEmail())
+                .claim("phoneNumber", user.getPhoneNumber())
                 .claim("role", role.name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessTokenSeconds)))

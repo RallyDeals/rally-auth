@@ -74,9 +74,15 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        String refreshToken = issueRefreshToken(user.getId());
-        String accessToken = jwtTokenService.sign(user.getId(), user.getRole());
+        LoginResponse response = issueTokenPair(user);
         log.debug("User logged in userId={}", user.getId());
+        return response;
+    }
+
+    @Transactional
+    public LoginResponse issueTokenPair(User user) {
+        String refreshToken = issueRefreshToken(user.getId());
+        String accessToken = jwtTokenService.sign(user, user.getRole());
         return new LoginResponse(
                 accessToken,
                 refreshToken,

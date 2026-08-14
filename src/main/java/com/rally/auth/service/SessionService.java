@@ -58,7 +58,7 @@ public class SessionService {
 
         token.revoke();
         String refreshToken = issueRefreshToken(user.getId());
-        String accessToken = jwtTokenService.sign(user.getId(), user.getRole());
+        String accessToken = jwtTokenService.sign(user, user.getRole());
         log.debug("Session renewed userId={}", user.getId());
         return new TokenPairResponse(
                 accessToken,
