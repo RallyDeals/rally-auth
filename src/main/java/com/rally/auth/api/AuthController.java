@@ -5,11 +5,17 @@ import com.rally.auth.dto.LoginRequest;
 import com.rally.auth.dto.LoginResponse;
 import com.rally.auth.dto.LogoutRequest;
 import com.rally.auth.dto.RefreshRequest;
+import com.rally.auth.dto.RegisterRequest;
+import com.rally.auth.dto.RegisterResponse;
+import com.rally.auth.dto.ResendVerificationRequest;
 import com.rally.auth.dto.TokenPairResponse;
+import com.rally.auth.dto.VerifyEmailRequest;
 import com.rally.auth.service.AuthService;
+import com.rally.auth.service.RegistrationService;
 import com.rally.auth.service.SessionService;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,15 +29,36 @@ public class AuthController {
 
     private final AuthService authService;
     private final SessionService sessionService;
+    private final RegistrationService registrationService;
 
-    public AuthController(AuthService authService, SessionService sessionService) {
+    public AuthController(AuthService authService, SessionService sessionService,
+            RegistrationService registrationService) {
         this.authService = authService;
         this.sessionService = sessionService;
+        this.registrationService = registrationService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(registrationService.register(request));
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<LoginResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return ResponseEntity.ok(registrationService.verifyEmail(request));
+    }
+
+    @PostMapping("/resend-verification-otp")
+    public ResponseEntity<Void> resendVerificationOtp(
+            @Valid @RequestBody ResendVerificationRequest request) {
+        registrationService.resendVerificationOtp(request);
+        return ResponseEntity.accepted().build();
     }
 
     @PostMapping("/refresh")
