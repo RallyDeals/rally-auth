@@ -30,20 +30,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Generate temporary Maven settings file
-        run: |
-          cat << 'EOF' > mvn_settings.xml
-          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${{ secrets.GH_PACKAGES_USERNAME }}</username>
-                <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -53,5 +39,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:develop
             ${{ env.IMAGE_NAME }}:latest
-          secrets: |
-            mvn_settings=mvn_settings.xml
+          build-args: |
+            PACKAGES_USERNAME=${{ secrets.GH_PACKAGES_USERNAME }}
+            PACKAGES_TOKEN=${{ secrets.GH_PACKAGES_TOKEN }}
