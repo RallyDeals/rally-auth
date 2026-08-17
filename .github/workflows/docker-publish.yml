@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate temporary Maven settings file
         run: |
-          cat <<EOF > mvn_settings.xml
+          cat << 'EOF' > mvn_settings.xml
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
             <servers>
               <server>
