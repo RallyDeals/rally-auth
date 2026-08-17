@@ -126,6 +126,10 @@ public class User {
         this.passwordHash = newPasswordHash;
     }
 
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
     public void changeRole(Role role) {
         this.role = role;
     }

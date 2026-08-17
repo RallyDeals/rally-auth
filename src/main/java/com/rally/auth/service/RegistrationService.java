@@ -16,6 +16,7 @@ import com.rally.auth.messaging.contract.UserEventTypes;
 import com.rally.auth.messaging.outbox.OutboxEventWriter;
 import com.rally.auth.repository.EmailOtpJpaRepository;
 import com.rally.auth.repository.UserJpaRepository;
+import com.rally.auth.security.OtpEncryptor;
 import com.rally.auth.security.OtpGenerator;
 import com.rally.common.exceptions.domain.auth.UserAlreadyExistsException;
 import com.rally.common.exceptions.shared.ValidationException;
@@ -43,6 +44,7 @@ public class RegistrationService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final OtpGenerator otpGenerator;
+    private final OtpEncryptor otpEncryptor;
     private final OutboxEventWriter outboxEventWriter;
     private final AuthService authService;
     private final AppProperties appProperties;
@@ -54,6 +56,7 @@ public class RegistrationService {
             PasswordEncoder passwordEncoder,
             PasswordPolicyValidator passwordPolicyValidator,
             OtpGenerator otpGenerator,
+            OtpEncryptor otpEncryptor,
             OutboxEventWriter outboxEventWriter,
             AuthService authService,
             AppProperties appProperties,
@@ -63,6 +66,7 @@ public class RegistrationService {
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.otpGenerator = otpGenerator;
+        this.otpEncryptor = otpEncryptor;
         this.outboxEventWriter = outboxEventWriter;
         this.authService = authService;
         this.appProperties = appProperties;
@@ -108,7 +112,7 @@ public class RegistrationService {
         User user = byEmail.get();
         if (user.isEmailVerified()) {
             log.debug("Re-verification of already-verified email (idempotent) userId={}", user.getId());
-            return authService.issueTokenPair(user);
+            throw new InvalidOtpException();
         }
 
         EmailOtp otp = emailOtpJpaRepository
@@ -170,13 +174,17 @@ public class RegistrationService {
         emailOtpJpaRepository.save(otp);
 
         if (appProperties.getEmail().isEnabled()) {
-            outboxEventWriter.writeUserEvent(
-                    userId,
-                    UserEventTypes.EMAIL_VERIFICATION_REQUESTED,
-                    OBJECT_MAPPER.valueToTree(Map.of(
-                            "userId", userId.toString(),
-                            "email", email,
-                            "otpRequestId", otp.getId().toString())));
+            if (otpEncryptor.isConfigured()) {
+                outboxEventWriter.writeUserEvent(
+                        userId,
+                        UserEventTypes.EMAIL_VERIFICATION_REQUESTED,
+                        OBJECT_MAPPER.valueToTree(Map.of(
+                                "userId", userId.toString(),
+                                "email", email,
+                                "otp", otpEncryptor.encrypt(code))));
+            } else {
+                log.error("OTP encryption not configured; email verification delivery skipped userId={}", userId);
+            }
         } else {
             log.warn("Email delivery disabled: verification code for {} is {}", email, code);
         }
