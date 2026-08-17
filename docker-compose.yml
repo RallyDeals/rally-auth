@@ -54,6 +54,24 @@ services:
     networks:
       - rally-network
 
+  auth:
+    image: rallydeals/rally-auth:develop
+    container_name: rally-auth
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth_postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      OTP_ENCRYPTION_SALT: 41b0bf0fbeeb24a5022dc25ead1b5009
+      OTP_ENCRYPTION_PASSWORD: Rally@OtpKey2026!Sec
+    depends_on:
+      - auth_postgres
+      - broker
+    networks:
+      - rally-network
+
 # Root Level Network & Volumes Definition
 networks:
   rally-network:
