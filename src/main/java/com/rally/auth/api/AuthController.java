@@ -11,15 +11,20 @@ import com.rally.auth.dto.RegisterResponse;
 import com.rally.auth.dto.ResendVerificationRequest;
 import com.rally.auth.dto.ResetPasswordRequest;
 import com.rally.auth.dto.TokenPairResponse;
+import com.rally.auth.dto.UpdateProfileRequest;
+import com.rally.auth.dto.UserResponse;
 import com.rally.auth.dto.VerifyEmailRequest;
 import com.rally.auth.service.AuthService;
 import com.rally.auth.service.PasswordResetService;
+import com.rally.auth.service.ProfileService;
 import com.rally.auth.service.RegistrationService;
 import com.rally.auth.service.SessionService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -34,13 +39,16 @@ public class AuthController {
     private final SessionService sessionService;
     private final RegistrationService registrationService;
     private final PasswordResetService passwordResetService;
+    private final ProfileService profileService;
 
     public AuthController(AuthService authService, SessionService sessionService,
-            RegistrationService registrationService, PasswordResetService passwordResetService) {
+            RegistrationService registrationService, PasswordResetService passwordResetService,
+            ProfileService profileService) {
         this.authService = authService;
         this.sessionService = sessionService;
         this.registrationService = registrationService;
         this.passwordResetService = passwordResetService;
+        this.profileService = profileService;
     }
 
     @PostMapping("/login")
@@ -95,5 +103,17 @@ public class AuthController {
             @RequestBody ChangePasswordRequest request) {
         authService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(@RequestHeader("X-User-Id") UUID userId) {
+        return ResponseEntity.ok(profileService.getProfile(userId));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateMe(
+            @RequestHeader("X-User-Id") UUID userId,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(profileService.updateOwnProfile(userId, request));
     }
 }

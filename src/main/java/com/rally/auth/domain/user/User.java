@@ -110,6 +110,18 @@ public class User {
         }
     }
 
+    public void applyProfile(String firstName, String lastName, String phoneNumber) {
+        if (firstName != null) {
+            this.firstName = firstName;
+        }
+        if (lastName != null) {
+            this.lastName = lastName.isEmpty() ? null : lastName;
+        }
+        if (phoneNumber != null) {
+            this.phoneNumber = phoneNumber.isEmpty() ? null : phoneNumber;
+        }
+    }
+
     public void changePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
     }
