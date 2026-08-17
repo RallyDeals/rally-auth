@@ -1,0 +1,188 @@
+package com.rally.auth.service;
+
+import com.rally.auth.domain.user.Role;
+import com.rally.auth.domain.user.User;
+import com.rally.auth.dto.PageResponse;
+import com.rally.auth.dto.SellerListItem;
+import com.rally.auth.dto.UserListItem;
+import com.rally.auth.repository.RefreshTokenJpaRepository;
+import com.rally.auth.repository.UserJpaRepository;
+import com.rally.common.exceptions.shared.NotFoundException;
+import com.rally.common.exceptions.shared.UnauthorizedException;
+import com.rally.common.exceptions.shared.ValidationException;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class AdminUserService {
+
+    private static final int DEFAULT_LIMIT = 20;
+    private static final int MAX_LIMIT = 100;
+
+    private final UserJpaRepository userJpaRepository;
+    private final RefreshTokenJpaRepository refreshTokenJpaRepository;
+
+    public AdminUserService(UserJpaRepository userJpaRepository, RefreshTokenJpaRepository refreshTokenJpaRepository) {
+        this.userJpaRepository = userJpaRepository;
+        this.refreshTokenJpaRepository = refreshTokenJpaRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserListItem> listBuyers(
+            UUID adminId, int page, int limit, String search, List<String> types, List<String> statuses) {
+        requireAdmin(adminId);
+        List<Role> roleFilters = mapTypes(types);
+        List<Boolean> statusFilters = mapStatuses(statuses);
+        Specification<User> spec = accountSpec(search, roleFilters, statusFilters);
+        return listUsers(spec, page, limit, this::toUserListItem);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<SellerListItem> listSellers(UUID adminId, int page, int limit, String search) {
+        requireAdmin(adminId);
+        Specification<User> spec = accountSpec(search, List.of(Role.SELLER), null);
+        return listUsers(spec, page, limit, this::toSellerListItem);
+    }
+
+    private <T> PageResponse<T> listUsers(
+            Specification<User> spec, int page, int limit, java.util.function.Function<User, T> mapper) {
+        int pageNumber = Math.max(page, 1);
+        int pageSize = limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
+        Page<User> result = userJpaRepository.findAll(
+                spec,
+                PageRequest.of(pageNumber - 1, pageSize,
+                        Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.ASC, "id"))));
+        return new PageResponse<>(
+                result.getContent().stream().map(mapper).toList(),
+                pageNumber,
+                pageSize,
+                result.getTotalElements());
+    }
+
+    private Specification<User> accountSpec(String search, List<Role> types, List<Boolean> statuses) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("role").in(Role.BUYER, Role.SELLER));
+            String term = search == null ? null : search.trim();
+            if (term != null && !term.isEmpty()) {
+                String pattern = "%" + term.toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("firstName")), pattern),
+                        cb.like(cb.lower(root.get("lastName")), pattern),
+                        cb.like(cb.lower(root.get("email")), pattern)));
+            }
+            if (types != null && !types.isEmpty()) {
+                predicates.add(root.get("role").in(types));
+            }
+            if (statuses != null && !statuses.isEmpty()) {
+                predicates.add(root.get("enabled").in(statuses));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private List<Role> mapTypes(List<String> types) {
+        if (types == null || types.isEmpty()) {
+            return null;
+        }
+        return types.stream().map(type -> switch (type) {
+            case "buyer" -> Role.BUYER;
+            case "seller" -> Role.SELLER;
+            default -> throw new ValidationException("Invalid account type: " + type);
+        }).toList();
+    }
+
+    private List<Boolean> mapStatuses(List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return null;
+        }
+        return statuses.stream().map(status -> switch (status) {
+            case "active" -> Boolean.TRUE;
+            case "banned" -> Boolean.FALSE;
+            default -> throw new ValidationException("Invalid account status: " + status);
+        }).toList();
+    }
+
+    private UserListItem toUserListItem(User user) {
+        return new UserListItem(
+                user.getId(),
+                fullName(user),
+                user.getEmail(),
+                null,
+                user.getCreatedAt(),
+                user.isEnabled() ? "active" : "banned",
+                user.getRole() == Role.SELLER ? "seller" : "buyer");
+    }
+
+    private SellerListItem toSellerListItem(User user) {
+        return new SellerListItem(
+                user.getId(),
+                fullName(user),
+                user.getEmail(),
+                null,
+                user.getCreatedAt());
+    }
+
+    @Transactional
+    public void ban(UUID adminId, UUID targetId) {
+        requireAdmin(adminId);
+        User target = findUser(targetId);
+        if (target.getRole() == Role.ADMIN) {
+            throw new ValidationException("Cannot ban an ADMIN account");
+        }
+        target.disable();
+        refreshTokenJpaRepository.revokeAllByUserId(targetId);
+        userJpaRepository.save(target);
+    }
+
+    @Transactional
+    public void activate(UUID adminId, UUID targetId) {
+        requireAdmin(adminId);
+        User target = findUser(targetId);
+        if (target.getRole() == Role.ADMIN) {
+            throw new ValidationException("Cannot activate an ADMIN account");
+        }
+        target.enable();
+        userJpaRepository.save(target);
+    }
+
+    @Transactional(readOnly = true)
+    public SellerListItem getSeller(UUID adminId, UUID targetId) {
+        requireAdmin(adminId);
+        User user = findUser(targetId);
+        if (user.getRole() != Role.SELLER) {
+            throw new NotFoundException("User", targetId);
+        }
+        return toSellerListItem(user);
+    }
+
+    private void requireAdmin(UUID adminId) {
+        User admin = findUser(adminId);
+        if (admin.getRole() != Role.ADMIN) {
+            throw new UnauthorizedException("Admin access required");
+        }
+    }
+
+    private User findUser(UUID userId) {
+        return userJpaRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User", userId));
+    }
+
+    private String fullName(User user) {
+        String firstName = user.getFirstName() == null ? "" : user.getFirstName().trim();
+        String lastName = user.getLastName() == null ? "" : user.getLastName().trim();
+        if (lastName.isEmpty()) {
+            return firstName;
+        }
+        return firstName + " " + lastName;
+    }
+}
