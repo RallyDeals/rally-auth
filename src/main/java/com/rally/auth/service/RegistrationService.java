@@ -108,7 +108,7 @@ public class RegistrationService {
         User user = byEmail.get();
         if (user.isEmailVerified()) {
             log.debug("Re-verification of already-verified email (idempotent) userId={}", user.getId());
-            return authService.issueTokenPair(user);
+            throw new InvalidOtpException();
         }
 
         EmailOtp otp = emailOtpJpaRepository
