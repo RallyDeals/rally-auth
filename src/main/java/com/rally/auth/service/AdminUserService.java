@@ -37,7 +37,7 @@ public class AdminUserService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<UserListItem> listBuyers(
+    public PageResponse<UserListItem> listUsers(
             UUID adminId, int page, int limit, String search, List<String> types, List<String> statuses) {
         requireAdmin(adminId);
         List<Role> roleFilters = mapTypes(types);
@@ -71,7 +71,6 @@ public class AdminUserService {
     private Specification<User> accountSpec(String search, List<Role> types, List<Boolean> statuses) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(root.get("role").in(Role.BUYER, Role.SELLER));
             String term = search == null ? null : search.trim();
             if (term != null && !term.isEmpty()) {
                 String pattern = "%" + term.toLowerCase(Locale.ROOT) + "%";
@@ -94,9 +93,10 @@ public class AdminUserService {
         if (types == null || types.isEmpty()) {
             return null;
         }
-        return types.stream().map(type -> switch (type) {
+        return types.stream().map(type -> switch (type.toLowerCase()) {
             case "buyer" -> Role.BUYER;
             case "seller" -> Role.SELLER;
+            case "admin" -> Role.ADMIN;
             default -> throw new ValidationException("Invalid account type: " + type);
         }).toList();
     }
@@ -105,7 +105,7 @@ public class AdminUserService {
         if (statuses == null || statuses.isEmpty()) {
             return null;
         }
-        return statuses.stream().map(status -> switch (status) {
+        return statuses.stream().map(status -> switch (status.toLowerCase()) {
             case "active" -> Boolean.TRUE;
             case "banned" -> Boolean.FALSE;
             default -> throw new ValidationException("Invalid account status: " + status);
@@ -120,7 +120,11 @@ public class AdminUserService {
                 null,
                 user.getCreatedAt(),
                 user.isEnabled() ? "active" : "banned",
-                user.getRole() == Role.SELLER ? "seller" : "buyer");
+                switch (user.getRole()) {
+                    case ADMIN -> "admin";
+                    case SELLER -> "seller";
+                    case BUYER -> "buyer";
+                });
     }
 
     private SellerListItem toSellerListItem(User user) {

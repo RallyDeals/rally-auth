@@ -46,8 +46,8 @@ public class UserController {
         return ResponseEntity.ok(profileService.updateUserProfile(id, adminId, request));
     }
 
-    @GetMapping("/buyers")
-    public ResponseEntity<PageResponse<UserListItem>> listBuyers(
+    @GetMapping
+    public ResponseEntity<PageResponse<UserListItem>> listUsers(
             @RequestHeader("X-User-Id") UUID adminId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
@@ -55,7 +55,7 @@ public class UserController {
             @RequestParam(required = false) List<String> types,
             @RequestParam(required = false) List<String> statuses) {
         return ResponseEntity.ok(
-                adminUserService.listBuyers(adminId, page, limit, search, types, statuses));
+                adminUserService.listUsers(adminId, page, limit, search, types, statuses));
     }
 
     @GetMapping("/sellers")
