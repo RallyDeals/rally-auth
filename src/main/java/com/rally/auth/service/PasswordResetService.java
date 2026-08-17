@@ -11,6 +11,7 @@ import com.rally.auth.messaging.outbox.OutboxEventWriter;
 import com.rally.auth.repository.EmailOtpJpaRepository;
 import com.rally.auth.repository.RefreshTokenJpaRepository;
 import com.rally.auth.repository.UserJpaRepository;
+import com.rally.auth.security.OtpEncryptor;
 import com.rally.auth.security.OtpGenerator;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,6 +38,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyValidator passwordPolicyValidator;
     private final OtpGenerator otpGenerator;
+    private final OtpEncryptor otpEncryptor;
     private final OtpAttemptRecorder otpAttemptRecorder;
     private final OutboxEventWriter outboxEventWriter;
     private final AppProperties appProperties;
@@ -48,6 +50,7 @@ public class PasswordResetService {
             PasswordEncoder passwordEncoder,
             PasswordPolicyValidator passwordPolicyValidator,
             OtpGenerator otpGenerator,
+            OtpEncryptor otpEncryptor,
             OtpAttemptRecorder otpAttemptRecorder,
             OutboxEventWriter outboxEventWriter,
             AppProperties appProperties) {
@@ -57,6 +60,7 @@ public class PasswordResetService {
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyValidator = passwordPolicyValidator;
         this.otpGenerator = otpGenerator;
+        this.otpEncryptor = otpEncryptor;
         this.otpAttemptRecorder = otpAttemptRecorder;
         this.outboxEventWriter = outboxEventWriter;
         this.appProperties = appProperties;
@@ -126,14 +130,18 @@ public class PasswordResetService {
 
         UUID requestId = UUID.randomUUID();
         if (appProperties.getEmail().isEnabled()) {
-            outboxEventWriter.writeUserEvent(
-                    userId,
-                    UserEventTypes.PASSWORD_RESET_REQUESTED,
-                    OBJECT_MAPPER.valueToTree(Map.of(
-                            "userId", userId.toString(),
-                            "email", email,
-                            "otpRequestId", otp.getId().toString())),
-                    requestId);
+            if (otpEncryptor.isConfigured()) {
+                outboxEventWriter.writeUserEvent(
+                        userId,
+                        UserEventTypes.PASSWORD_RESET_REQUESTED,
+                        OBJECT_MAPPER.valueToTree(Map.of(
+                                "userId", userId.toString(),
+                                "email", email,
+                                "otp", otpEncryptor.encrypt(code))),
+                        requestId);
+            } else {
+                log.error("OTP encryption not configured; password reset delivery skipped userId={}", userId);
+            }
         } else {
             log.warn("Email delivery disabled: reset code for {} is {}", email, code);
         }

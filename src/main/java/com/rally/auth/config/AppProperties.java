@@ -32,6 +32,15 @@ public class AppProperties {
         private int expirationMinutes = 10;
         private int maxAttempts = 5;
         private int resendCooldownSeconds = 60;
+
+        private final Encryption encryption = new Encryption();
+
+        @Getter
+        @Setter
+        public static class Encryption {
+            private String password;
+            private String salt;
+        }
     }
 
     @Getter
