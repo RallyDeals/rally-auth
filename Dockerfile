@@ -1,20 +1,12 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
-ARG PACKAGES_USERNAME
-ARG PACKAGES_TOKEN
-
-ENV PACKAGES_USERNAME=$GITHUB_ACTOR
-ENV PACKAGES_TOKEN=$GITHUB_TOKEN
-
-RUN mkdir -p /root/.m2
-COPY settings.xml /root/.m2/settings.xml
-
 COPY pom.xml .
 COPY src src
 
-# Run global 'mvn' instead of wrapper './mvnw' to bypass script execution issues
-RUN mvn -s /root/.m2/settings.xml -q clean package -DskipTests
+# Mount the secret settings.xml file securely during build time and run maven
+RUN --mount=type=secret,id=mvn_settings \
+    mvn -s /run/secrets/mvn_settings -q clean package -DskipTests
 
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
