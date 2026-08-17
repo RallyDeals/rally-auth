@@ -27,6 +27,7 @@ public class JwtTokenService {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(user.getId().toString())
+                .claim("name", fullName(user))
                 .claim("firstName", user.getFirstName())
                 .claim("id", user.getId())
                 .claim("lastName", user.getLastName())
@@ -37,5 +38,14 @@ public class JwtTokenService {
                 .expiration(Date.from(now.plusSeconds(accessTokenSeconds)))
                 .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
+    }
+
+    private String fullName(User user) {
+        String firstName = user.getFirstName() == null ? "" : user.getFirstName().trim();
+        String lastName = user.getLastName() == null ? "" : user.getLastName().trim();
+        if (lastName.isEmpty()) {
+            return firstName;
+        }
+        return firstName + " " + lastName;
     }
 }
