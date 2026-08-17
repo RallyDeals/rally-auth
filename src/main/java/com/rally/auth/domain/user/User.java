@@ -47,9 +47,6 @@ public class User {
     @Column(name = "role", nullable = false, length = 10)
     private Role role;
 
-    @Column(name = "stripe_customer_id", length = 255)
-    private String stripeCustomerId;
-
     @Column(name = "enabled", nullable = false)
     private boolean enabled;
 
@@ -110,6 +107,18 @@ public class User {
         }
         if (phoneNumber != null) {
             this.phoneNumber = phoneNumber;
+        }
+    }
+
+    public void applyProfile(String firstName, String lastName, String phoneNumber) {
+        if (firstName != null) {
+            this.firstName = firstName;
+        }
+        if (lastName != null) {
+            this.lastName = lastName.isEmpty() ? null : lastName;
+        }
+        if (phoneNumber != null) {
+            this.phoneNumber = phoneNumber.isEmpty() ? null : phoneNumber;
         }
     }
 
