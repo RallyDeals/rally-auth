@@ -48,7 +48,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: auth_db
     ports:
-      - "5433:5432"
+      - "5436:5432"
     volumes:
       - pgdata-auth:/var/lib/postgresql/data
     networks:
