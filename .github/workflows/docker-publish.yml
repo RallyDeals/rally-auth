@@ -5,7 +5,7 @@ on:
     branches: [develop]
 
 env:
-  IMAGE_NAME: rallydeals/rally-auth
+  IMAGE_NAME: medhatdh/rally-auth
 
 jobs:
   build-and-push:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate temporary Maven settings file
         run: |
-          cat <<EOF > mvn_settings.xml
+          cat <<'EOF' > mvn_settings.xml
           <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
             <servers>
               <server>
@@ -53,5 +53,5 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:develop
             ${{ env.IMAGE_NAME }}:latest
-          secrets: |
-            mvn_settings=mvn_settings.xml
+          secret-files: |
+            mvn_settings=./mvn_settings.xml
