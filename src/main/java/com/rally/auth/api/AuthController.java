@@ -5,6 +5,7 @@ import com.rally.auth.dto.ForgotPasswordRequest;
 import com.rally.auth.dto.LoginRequest;
 import com.rally.auth.dto.LoginResponse;
 import com.rally.auth.dto.LogoutRequest;
+import com.rally.auth.dto.OtpVerificationResponse;
 import com.rally.auth.dto.RefreshRequest;
 import com.rally.auth.dto.RegisterRequest;
 import com.rally.auth.dto.RegisterResponse;
@@ -14,6 +15,7 @@ import com.rally.auth.dto.TokenPairResponse;
 import com.rally.auth.dto.UpdateProfileRequest;
 import com.rally.auth.dto.UserResponse;
 import com.rally.auth.dto.VerifyEmailRequest;
+import com.rally.auth.dto.VerifyOtpRequest;
 import com.rally.auth.service.AuthService;
 import com.rally.auth.service.PasswordResetService;
 import com.rally.auth.service.ProfileService;
@@ -78,6 +80,20 @@ public class AuthController {
     public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.requestPasswordReset(request.email());
         return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/verify-email-otp")
+    public ResponseEntity<OtpVerificationResponse> verifyEmailOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+        return ResponseEntity.ok(new OtpVerificationResponse(
+                registrationService.verifyEmailOtp(request.email(), request.otp())));
+    }
+
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<OtpVerificationResponse> verifyResetOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+        return ResponseEntity.ok(new OtpVerificationResponse(
+                passwordResetService.verifyResetOtp(request.email(), request.otp())));
     }
 
     @PostMapping("/reset-password")

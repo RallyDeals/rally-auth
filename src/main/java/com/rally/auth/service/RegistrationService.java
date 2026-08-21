@@ -102,6 +102,35 @@ public class RegistrationService {
         return toRegisterResponse(user);
     }
 
+    @Transactional(readOnly = true)
+    public boolean verifyEmailOtp(String email, String otp) {
+        String normalized = normalize(email);
+        Optional<User> byEmail = userJpaRepository.findByEmail(normalized);
+        if (byEmail.isEmpty()) {
+            throw new InvalidOtpException();
+        }
+        User user = byEmail.get();
+        if (user.isEmailVerified()) {
+            throw new InvalidOtpException();
+        }
+
+        EmailOtp otpRecord = emailOtpJpaRepository
+                .findFirstByEmailAndPurposeOrderByCreatedAtDesc(normalized, OtpPurpose.EMAIL_VERIFICATION)
+                .orElseThrow(InvalidOtpException::new);
+
+        int maxAttempts = appProperties.getOtp().getMaxAttempts();
+        if (!otpRecord.isValid() || otpRecord.isExhausted(maxAttempts)) {
+            throw new InvalidOtpException();
+        }
+        if (!otpRecord.getOtp().equals(otp)) {
+            otpAttemptRecorder.recordFailedAttempt(otpRecord.getId());
+            log.warn("Failed verification pre-check attempt userId={} attempts={} of {}",
+                    user.getId(), otpRecord.getFailedAttempts() + 1, maxAttempts);
+            throw new InvalidOtpException();
+        }
+        return true;
+    }
+
     @Transactional
     public LoginResponse verifyEmail(VerifyEmailRequest request) {
         String email = normalize(request.email());
