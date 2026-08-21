@@ -4,7 +4,11 @@ import com.rally.auth.domain.user.Role;
 import com.rally.auth.domain.user.User;
 import com.rally.auth.dto.PageResponse;
 import com.rally.auth.dto.SellerListItem;
+import com.rally.auth.dto.UpdateRoleRequest;
 import com.rally.auth.dto.UserListItem;
+import com.rally.auth.dto.UserResponse;
+import com.rally.auth.dto.UserRoleResponse;
+import com.rally.auth.exception.RoleChangeNotAllowedException;
 import com.rally.auth.repository.RefreshTokenJpaRepository;
 import com.rally.auth.repository.UserJpaRepository;
 import com.rally.common.exceptions.shared.NotFoundException;
@@ -169,6 +173,45 @@ public class AdminUserService {
         return toSellerListItem(user);
     }
 
+    @Transactional(readOnly = true)
+    public UserRoleResponse getRoles(UUID adminId, UUID targetId) {
+        requireAdmin(adminId);
+        User user = findUser(targetId);
+        return new UserRoleResponse(user.getId(), user.getRole());
+    }
+
+    @Transactional
+    public UserResponse changeRole(UUID adminId, UUID targetId, UpdateRoleRequest request) {
+        User caller = findUser(adminId);
+        if (caller.getRole() != Role.ADMIN) {
+            throw new RoleChangeNotAllowedException();
+        }
+        User target = findUser(targetId);
+        if (target.getRole() == Role.ADMIN) {
+            throw new RoleChangeNotAllowedException();
+        }
+        Role newRole = resolveRole(request.role());
+        if (target.getRole() == newRole) {
+            return toUserResponse(target);
+        }
+        target.changeRole(newRole);
+        userJpaRepository.save(target);
+        refreshTokenJpaRepository.revokeAllByUserId(targetId);
+        return toUserResponse(target);
+    }
+
+    private Role resolveRole(String role) {
+        if (role == null) {
+            throw new ValidationException("Role must be BUYER, SELLER or ADMIN");
+        }
+        return switch (role) {
+            case "BUYER" -> Role.BUYER;
+            case "SELLER" -> Role.SELLER;
+            case "ADMIN" -> Role.ADMIN;
+            default -> throw new ValidationException("Role must be BUYER, SELLER or ADMIN");
+        };
+    }
+
     private void requireAdmin(UUID adminId) {
         User admin = findUser(adminId);
         if (admin.getRole() != Role.ADMIN) {
@@ -179,6 +222,22 @@ public class AdminUserService {
     private User findUser(UUID userId) {
         return userJpaRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User", userId));
+    }
+
+    private UserResponse toUserResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                fullName(user),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                null,
+                user.getRole(),
+                user.isEnabled(),
+                user.isEmailVerified(),
+                user.getEmailVerifiedAt(),
+                user.getCreatedAt());
     }
 
     private String fullName(User user) {

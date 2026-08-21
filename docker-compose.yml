@@ -55,7 +55,7 @@ services:
       - rally-network
 
   auth:
-    image: rallydeals/rally-auth:develop
+    image: medhatdh/rally-auth:develop
     container_name: rally-auth
     ports:
       - "8082:8082"

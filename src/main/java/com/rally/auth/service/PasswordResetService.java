@@ -87,6 +87,27 @@ public class PasswordResetService {
         log.warn("New reset code requested userId={}", user.getId());
     }
 
+    @Transactional(readOnly = true)
+    public boolean verifyResetOtp(String email, String otp) {
+        String normalized = normalize(email);
+
+        EmailOtp resetCode = emailOtpJpaRepository
+                .findFirstByEmailAndPurposeOrderByCreatedAtDesc(normalized, OtpPurpose.PASSWORD_RESET)
+                .orElseThrow(InvalidOtpException::new);
+
+        int maxAttempts = appProperties.getOtp().getMaxAttempts();
+        if (!resetCode.isValid() || resetCode.isExhausted(maxAttempts)) {
+            throw new InvalidOtpException();
+        }
+        if (!resetCode.getOtp().equals(otp)) {
+            otpAttemptRecorder.recordFailedAttempt(resetCode.getId());
+            log.warn("Failed OTP pre-check attempt email={} attempts={} of {}",
+                    normalized, resetCode.getFailedAttempts() + 1, maxAttempts);
+            throw new InvalidOtpException();
+        }
+        return true;
+    }
+
     @Transactional
     public void resetPassword(String email, String otp, String newPassword) {
         String normalized = normalize(email);
