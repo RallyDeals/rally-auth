@@ -63,7 +63,7 @@ public class AuthService {
         User user = byEmail.get();
         if (!user.isEnabled()) {
             log.warn("Failed login attempt for disabled account userId={}", user.getId());
-            throw new DisabledAccountException();
+            throw new InvalidCredentialsException();
         }
         if (!user.isEmailVerified() && !appProperties.isAutoConfirmEmail()) {
             log.warn("Failed login attempt for unverified account userId={}", user.getId());
