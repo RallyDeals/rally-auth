@@ -3,10 +3,13 @@ package com.rally.auth.api;
 import com.rally.auth.dto.PageResponse;
 import com.rally.auth.dto.SellerListItem;
 import com.rally.auth.dto.UpdateProfileRequest;
+import com.rally.auth.dto.UpdateRoleRequest;
 import com.rally.auth.dto.UserListItem;
 import com.rally.auth.dto.UserResponse;
+import com.rally.auth.dto.UserRoleResponse;
 import com.rally.auth.service.AdminUserService;
 import com.rally.auth.service.ProfileService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -81,6 +84,21 @@ public class UserController {
             @RequestHeader("X-User-Id") UUID adminId) {
         adminUserService.activate(adminId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UserResponse> changeRole(
+            @PathVariable UUID id,
+            @RequestHeader("X-User-Id") UUID adminId,
+            @Valid @RequestBody UpdateRoleRequest request) {
+        return ResponseEntity.ok(adminUserService.changeRole(adminId, id, request));
+    }
+
+    @GetMapping("/{id}/roles")
+    public ResponseEntity<UserRoleResponse> getUserRoles(
+            @PathVariable UUID id,
+            @RequestHeader("X-User-Id") UUID adminId) {
+        return ResponseEntity.ok(adminUserService.getRoles(adminId, id));
     }
 
     @GetMapping("/sellers/{id}")
