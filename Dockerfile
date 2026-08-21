@@ -1,12 +1,17 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
+ARG PACKAGES_USERNAME
+ARG PACKAGES_TOKEN
+
 COPY pom.xml .
 COPY src src
 
-# Mount the secret settings.xml file securely during build time and run maven
-RUN --mount=type=secret,id=mvn_settings \
-    mvn -s /run/secrets/mvn_settings -q clean package -DskipTests
+# Generate settings.xml and run maven in a single RUN command to keep credentials out of image layers
+RUN mkdir -p /root/.m2 \
+    && printf '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">\n  <servers>\n    <server>\n      <id>github</id>\n      <username>%s</username>\n      <password>%s</password>\n    </server>\n  </servers>\n</settings>\n' \
+    "${PACKAGES_USERNAME}" "${PACKAGES_TOKEN}" > /root/.m2/settings.xml \
+    && mvn -s /root/.m2/settings.xml -q clean package -DskipTests
 
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
