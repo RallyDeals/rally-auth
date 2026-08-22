@@ -185,10 +185,10 @@ public class RegistrationService {
 
         Optional<EmailOtp> latest = emailOtpJpaRepository
                 .findFirstByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.EMAIL_VERIFICATION);
-        if (latest.isPresent() && withinCooldown(latest.get())) {
-            log.debug("Resend request within cooldown (no new code issued) email={}", email);
-            return;
-        }
+//        if (latest.isPresent() && withinCooldown(latest.get())) {
+//            log.debug("Resend request within cooldown (no new code issued) email={}", email);
+//            return;
+//        }
 
         issueVerificationCode(email, user.getId());
         log.warn("New verification code requested userId={}", user.getId());
