@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
+      - name: Set up Qemin / QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -37,8 +37,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:develop
+            ${{ env.IMAGE_NAME }}:v${{ github.run_number }}
             ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             PACKAGES_USERNAME=${{ secrets.GH_PACKAGES_USERNAME }}
             PACKAGES_TOKEN=${{ secrets.GH_PACKAGES_TOKEN }}
