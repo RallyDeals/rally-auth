@@ -11,9 +11,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-      packages: read
 
     steps:
       - name: Checkout
@@ -25,7 +25,7 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Configure Maven settings (GitHub Packages auth)
+      - name: Configure Maven settings
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
@@ -48,15 +48,21 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          
+
       - name: Grant execute permission for Maven wrapper
         run: chmod +x mvnw
-      - name: Build image with Spring Boot Buildpacks
-        run: ./mvnw -B spring-boot:build-image -DskipTests
+
+      - name: Build Docker image
+        run: |
+          ./mvnw -B spring-boot:build-image \
+            -DskipTests \
+            -Dspring-boot.build-image.imageName=${{ env.IMAGE_NAME }}:latest
 
       - name: Tag versioned image
         run: |
-          docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.IMAGE_NAME }}:v${{ github.run_number }}
+          docker tag \
+            ${{ env.IMAGE_NAME }}:latest \
+            ${{ env.IMAGE_NAME }}:v${{ github.run_number }}
 
       - name: Push images
         run: |
