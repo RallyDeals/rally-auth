@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ProfileService {
@@ -20,9 +21,11 @@ public class ProfileService {
     private static final Logger log = LoggerFactory.getLogger(ProfileService.class);
 
     private final UserJpaRepository userJpaRepository;
+    private final ImageStorageService imageStorageService;
 
-    public ProfileService(UserJpaRepository userJpaRepository) {
+    public ProfileService(UserJpaRepository userJpaRepository, ImageStorageService imageStorageService) {
         this.userJpaRepository = userJpaRepository;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +56,15 @@ public class ProfileService {
         User user = applyUpdate(targetId, request);
         log.debug("Profile updated by admin adminId={} targetUserId={}", adminId, targetId);
         return toUserResponse(user);
+    }
+
+    @Transactional
+    public UserResponse updateAvatar(UUID userId, MultipartFile file) {
+        User user = findUser(userId);
+        String url = imageStorageService.store(file);
+        user.setProfilePicture(url);
+        log.debug("Avatar updated userId={}", userId);
+        return toUserResponse(userJpaRepository.save(user));
     }
 
     private User applyUpdate(UUID userId, UpdateProfileRequest request) {
@@ -113,7 +125,7 @@ public class ProfileService {
                 user.getLastName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
-                null,
+                user.getProfilePicture(),
                 user.getRole(),
                 user.isEnabled(),
                 user.isEmailVerified(),
