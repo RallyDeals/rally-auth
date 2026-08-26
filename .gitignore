@@ -45,3 +45,5 @@ AGENTS.md
 specs/
 PLAN.md
 user-service.md
+./Dockerfile
+./docker-compose.yml
