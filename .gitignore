@@ -34,6 +34,8 @@ build/
 
 .env
 
+uploads/
+
 rally-common/
 Spec-Kit Docs/
 .specify/

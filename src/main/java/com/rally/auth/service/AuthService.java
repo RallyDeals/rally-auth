@@ -9,6 +9,7 @@ import com.rally.auth.dto.LoginResponse;
 import com.rally.auth.dto.UserSummary;
 import com.rally.auth.exception.DisabledAccountException;
 import com.rally.auth.exception.EmailNotVerifiedException;
+import com.rally.auth.exception.InvalidCurrentPassword;
 import com.rally.auth.repository.RefreshTokenJpaRepository;
 import com.rally.auth.repository.UserJpaRepository;
 import com.rally.auth.security.JwtTokenService;
@@ -97,7 +98,7 @@ public class AuthService {
         User user = userJpaRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User", userId));
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCurrentPassword();
         }
         passwordPolicyValidator.validate(request.newPassword());
 
