@@ -4,11 +4,16 @@ import com.rally.auth.domain.user.Role;
 import com.rally.auth.domain.user.User;
 import com.rally.auth.dto.UpdateProfileRequest;
 import com.rally.auth.dto.UserResponse;
+import com.rally.auth.dto.UserSummary;
 import com.rally.auth.repository.UserJpaRepository;
 import com.rally.common.exceptions.shared.NotFoundException;
 import com.rally.common.exceptions.shared.UnauthorizedException;
 import com.rally.common.exceptions.shared.ValidationException;
+
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -53,6 +58,14 @@ public class ProfileService {
         User user = applyUpdate(targetId, request);
         log.debug("Profile updated by admin adminId={} targetUserId={}", adminId, targetId);
         return toUserResponse(user);
+    }
+
+    @Transactional
+    public List<UserSummary> getUsersBatch(List<UUID> userIds) {
+        List<User> users = userJpaRepository.findByIdIn(userIds);
+        return users.stream()
+                .map(this::toUserSummary)
+                .collect(Collectors.toList());
     }
 
     private User applyUpdate(UUID userId, UpdateProfileRequest request) {
@@ -119,6 +132,16 @@ public class ProfileService {
                 user.isEmailVerified(),
                 user.getEmailVerifiedAt(),
                 user.getCreatedAt());
+    }
+
+    private UserSummary toUserSummary(User user){
+        return new UserSummary(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 
     private String fullName(User user) {
