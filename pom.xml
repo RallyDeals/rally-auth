@@ -150,18 +150,22 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.5.2</version>
 				<configuration>
-					<image>
-						<name>medhatdh/rally-auth:latest</name>
-					</image>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
+					<from>
+						<image>eclipse-temurin:21-jre-alpine</image>
+					</from>
+					<to>
+						<image>medhatdh/rally-auth:latest</image>
+					</to>
+					<container>
+						<mainClass>com.rally.auth.AuthApplication</mainClass>
+						<ports>
+							<port>8082</port>
+						</ports>
+					</container>
 				</configuration>
 			</plugin>
 			<plugin>
