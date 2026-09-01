@@ -1,6 +1,8 @@
 package com.rally.auth.repository;
 
 import com.rally.auth.domain.user.User;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +15,6 @@ public interface UserJpaRepository extends JpaRepository<User, UUID>, JpaSpecifi
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    List<User> findByIdIn(List<UUID> userIds);
 }

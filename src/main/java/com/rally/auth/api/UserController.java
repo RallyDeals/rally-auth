@@ -1,12 +1,6 @@
 package com.rally.auth.api;
 
-import com.rally.auth.dto.PageResponse;
-import com.rally.auth.dto.SellerListItem;
-import com.rally.auth.dto.UpdateProfileRequest;
-import com.rally.auth.dto.UpdateRoleRequest;
-import com.rally.auth.dto.UserListItem;
-import com.rally.auth.dto.UserResponse;
-import com.rally.auth.dto.UserRoleResponse;
+import com.rally.auth.dto.*;
 import com.rally.auth.service.AdminUserService;
 import com.rally.auth.service.ProfileService;
 import jakarta.validation.Valid;
@@ -106,5 +100,11 @@ public class UserController {
             @PathVariable UUID id,
             @RequestHeader("X-User-Id") UUID adminId) {
         return ResponseEntity.ok(adminUserService.getSeller(adminId, id));
+    }
+
+    @GetMapping("/batch")
+    public ResponseEntity<List<UserSummary>> getUsersBatch(
+            @RequestBody List<UUID> userIds) {
+        return ResponseEntity.ok(profileService.getUsersBatch(userIds));
     }
 }
