@@ -77,7 +77,7 @@ public class RegistrationService {
     public RegisterResponse register(RegisterRequest request) {
         String email = normalize(request.email());
         if (userJpaRepository.existsByEmail(email)) {
-            log.warn("Registration rejected: email already exists email={}", email);
+            log.info("Registration rejected: email already exists email={}", email);
             throw new UserAlreadyExistsException(email);
         }
         passwordPolicyValidator.validate(request.password());
@@ -191,7 +191,7 @@ public class RegistrationService {
 //        }
 
         issueVerificationCode(email, user.getId());
-        log.warn("New verification code requested userId={}", user.getId());
+        log.info("New verification code requested userId={}", user.getId());
     }
 
     private void issueVerificationCode(String email, UUID userId) {
