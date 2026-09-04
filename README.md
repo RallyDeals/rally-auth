@@ -121,7 +121,7 @@ The V2 Flyway migration seeds 11 test users across all roles. All passwords are 
 | `a1@rally.local` | ADMIN | Active, verified |
 | `admin.locked@rally.local` | ADMIN | Disabled |
 | `s1@rally.local` | SELLER | Active, verified |
-| `u1@rally.local` | BUYER | Active, verified |
+| `b1@rally.local` | BUYER | Active, verified |
 
 ## Configuration
 
