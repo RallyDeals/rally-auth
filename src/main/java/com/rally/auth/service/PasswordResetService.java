@@ -84,7 +84,7 @@ public class PasswordResetService {
         }
 
         issueResetCode(normalized, user.getId());
-        log.warn("New reset code requested userId={}", user.getId());
+        log.info("New reset code requested userId={}", user.getId());
     }
 
     @Transactional(readOnly = true)
@@ -149,7 +149,6 @@ public class PasswordResetService {
         EmailOtp otp = EmailOtp.generate(email, OtpPurpose.PASSWORD_RESET, code, expiresAt);
         emailOtpJpaRepository.save(otp);
 
-        UUID requestId = UUID.randomUUID();
         if (appProperties.getEmail().isEnabled()) {
             if (otpEncryptor.isConfigured()) {
                 outboxEventWriter.writeUserEvent(
@@ -158,8 +157,7 @@ public class PasswordResetService {
                         OBJECT_MAPPER.valueToTree(Map.of(
                                 "userId", userId.toString(),
                                 "email", email,
-                                "otp", otpEncryptor.encrypt(code))),
-                        requestId);
+                                "otp", otpEncryptor.encrypt(code))));
             } else {
                 log.error("OTP encryption not configured; password reset delivery skipped userId={}", userId);
             }

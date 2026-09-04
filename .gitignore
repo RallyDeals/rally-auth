@@ -36,6 +36,9 @@ build/
 
 uploads/
 
+logs/
+!**/src/main/**/logs/
+
 rally-common/
 Spec-Kit Docs/
 .specify/
