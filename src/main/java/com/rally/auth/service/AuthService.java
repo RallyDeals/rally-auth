@@ -105,7 +105,7 @@ public class AuthService {
         user.changePassword(passwordEncoder.encode(request.newPassword()));
         userJpaRepository.save(user);
         refreshTokenJpaRepository.revokeAllByUserId(userId);
-        log.warn("Password changed and all sessions revoked userId={}", userId);
+        log.info("Password changed and all sessions revoked userId={}", userId);
     }
 
     private String issueRefreshToken(UUID userId) {
